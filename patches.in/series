@@ -12,4 +12,3 @@ ocaml-i386-profiling.patch
 ocaml-win32-compat.patch
 ocaml-revert-win32unix-select.patch
 findlib-fix-camlp4.patch
-findlib-fix-build.patch
