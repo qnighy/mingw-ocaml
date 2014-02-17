@@ -3,7 +3,7 @@
 	url = git://github.com/ocaml/ocaml.git
 [submodule "flexdll"]
 	path = flexdll
-	url = git://github.com/savonet/flexdll.git
+	url = git://github.com/alainfrisch/flexdll.git
 [submodule "findlib"]
 	path = findlib
 	url = git://github.com/qnighy/findlib.git
