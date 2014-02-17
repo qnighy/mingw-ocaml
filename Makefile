@@ -9,6 +9,7 @@ BUILD_DIR      := build
 BINARY_DIR     := $(CURDIR)/binary
 INSTALL_DIR    := # install at root
 INSTALL_PREFIX := /usr
+CONFIG_PREFIX  := /etc
 PATH           := $(PATH):$(CURDIR)/$(BUILD_DIR)/$(FLEXDLL_DIR)
 
 ifeq ($(MINGW_HOST),i686-w64-mingw32)
@@ -87,9 +88,9 @@ stamp-prepare-cross-build: stamp-patch-mingw-include
 	# config/Makefile is a custom one which we supply.
 	rm -f $(BUILD_DIR)/$(OCAML_DIR)/config/Makefile
 	sed \
-	  -e "s,@prefix@,/usr/$(MINGW_HOST),g" \
-	  -e "s,@bindir@,/usr/$(MINGW_HOST)/bin,g" \
-	  -e "s,@libdir@,/usr/$(MINGW_HOST)/lib/ocaml,g" \
+	  -e "s,@prefix@,$(INSTALL_PREFIX)/$(MINGW_HOST),g" \
+	  -e "s,@bindir@,$(INSTALL_PREFIX)/$(MINGW_HOST)/bin,g" \
+	  -e "s,@libdir@,$(INSTALL_PREFIX)/$(MINGW_HOST)/lib/ocaml,g" \
 	  -e "s,@otherlibraries@,$(OTHER_LIBS),g" \
 	  -e "s,@arch@,$(ARCH),g" \
 	  -e "s,@mingw_system@,$(MINGW_SYSTEM),g" \
@@ -193,7 +194,7 @@ stamp-build-findlib: stamp-binary-mingw-ocaml
 	  $(BINARY_DIR)$(INSTALL_PREFIX)/bin/$(MINGW_HOST)-ocamlopt \
 	  $(BINARY_DIR)$(INSTALL_PREFIX)/bin/$(MINGW_HOST)-ocamldep
 	cd $(BUILD_DIR)/$(FINDLIB_DIR) && ./configure \
-	  -config /etc/$(MINGW_HOST)-ocamlfind.conf \
+	  -config $(CONFIG_PREFIX)/$(MINGW_HOST)-ocamlfind.conf \
 	  -bindir  $(INSTALL_PREFIX)/$(MINGW_HOST)/bin \
 	  -sitelib $(INSTALL_PREFIX)/$(MINGW_HOST)/lib/ocaml \
 	  -mandir $(INSTALL_PREFIX)/share/man \
@@ -219,27 +220,27 @@ stamp-binary-all: stamp-build-findlib
 	# XXX topfind gets installed as %{_libdir}/ocaml - not sure why
 	# but delete it anyway.
 	rm -rf $(BINARY_DIR)$(INSTALL_PREFIX)/lib/ocaml
-	# Override /etc/%{_mingw_target}-ocamlfind.conf with our
+	# Override $(CONFIG_PREFIX)/%{_mingw_target}-ocamlfind.conf with our
 	# own version.
-	rm $(BINARY_DIR)/etc/$(MINGW_HOST)-ocamlfind.conf
+	rm $(BINARY_DIR)$(CONFIG_PREFIX)/$(MINGW_HOST)-ocamlfind.conf
 	sed \
 	  -e "s,@libdir@,$(INSTALL_PREFIX)/$(MINGW_HOST)/lib,g" \
 	  -e 's,@target@,$(MINGW_HOST),g' \
 	  < files/findlib/ocamlfind.conf.in \
-	  > $(BINARY_DIR)/etc/$(MINGW_HOST)-ocamlfind.conf
+	  > $(BINARY_DIR)$(CONFIG_PREFIX)/$(MINGW_HOST)-ocamlfind.conf
 	# Install flexlink binary
 	mkdir -p $(BINARY_DIR)$(INSTALL_PREFIX)/lib/flexdll
 	cd $(BUILD_DIR)/$(FLEXDLL_DIR) && install -m 0755 flexlink.exe flexdll_mingw.o flexdll_initer_mingw.o \
 	                                                               flexdll_mingw64.o flexdll_initer_mingw64.o \
 	                                                     $(BINARY_DIR)$(INSTALL_PREFIX)/lib/flexdll
-	# Nothing in /usr/$(MINGW_HOST)/lib/ocaml should 'a priori' be executable except flexlink.exe..
+	# Nothing in $(INSTALL_PREFIX)/$(MINGW_HOST)/lib/ocaml should 'a priori' be executable except flexlink.exe..
 	find $(BINARY_DIR)$(INSTALL_PREFIX)/$(MINGW_HOST)/lib/ocaml -type f -executable | grep -v flexlink.exe | while read i; do \
 	    chmod -x $$i; done
-	# Now make all script with #!/usr/bin/ocamlrun executables
-	grep -r -l '#!/usr/$(MINGW_HOST)/bin/ocamlrun' $(BINARY_DIR)$(INSTALL_PREFIX)/bin | while read i; do \
-	  sed -e 's|#!/usr/$(MINGW_HOST)/bin/ocamlrun|#!/usr/bin/$(MINGW_HOST)-ocamlrun|' -i $$i; \
+	# Now make all script with #!$(INSTALL_PREFIX)/bin/ocamlrun executables
+	grep -r -l '#!$(INSTALL_PREFIX)/$(MINGW_HOST)/bin/ocamlrun' $(BINARY_DIR)$(INSTALL_PREFIX)/bin | while read i; do \
+	  sed -e 's|#!$(INSTALL_PREFIX)/$(MINGW_HOST)/bin/ocamlrun|#!$(INSTALL_PREFIX)/bin/$(MINGW_HOST)-ocamlrun|' -i $$i; \
 	  chmod +x $$i; done
-	# Remove rm -rf $(BINARY_DIR)$(INSTALL_PREFIX)/$(MINGW_HOST)/bin: all binaries should be prefixed and living in /usr/bin..
+	# Remove rm -rf $(BINARY_DIR)$(INSTALL_PREFIX)/$(MINGW_HOST)/bin: all binaries should be prefixed and living in $(INSTALL_PREFIX)/bin..
 	rm -rf $(BINARY_DIR)$(INSTALL_PREFIX)/$(MINGW_HOST)/bin
 	touch stamp-binary-all
 
